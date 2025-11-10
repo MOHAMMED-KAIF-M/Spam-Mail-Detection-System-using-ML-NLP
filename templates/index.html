@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Spam Mail Detection System</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>📩 Spam Mail Detection</h1>
+      <p class="subtitle">Enter an email or message to check if it’s spam.</p>
+
+      <textarea id="text" rows="6" placeholder="Type or paste your message here..."></textarea>
+      <button id="check">Analyze Message</button>
+
+      <div id="result-box" class="hidden">
+        <h3>Result:</h3>
+        <p id="result-text"></p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  document.getElementById('check').addEventListener('click', async () => {
+    const text = document.getElementById('text').value.trim();
+    const resultBox = document.getElementById('result-box');
+    const resultText = document.getElementById('result-text');
+    resultBox.classList.add('hidden');
+
+    if (!text) {
+      resultText.textContent = "⚠️ Please enter some text first.";
+      resultBox.classList.remove('hidden');
+      return;
+    }
+
+    resultText.textContent = "⏳ Analyzing...";
+    resultBox.classList.remove('hidden');
+
+    try {
+      const res = await fetch('/predict', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ text })
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+
+      if (data.label === "spam") {
+        resultText.innerHTML = `🚫 <b>SPAM</b> detected with probability ${Math.round(data.spam_prob * 100)}%.`;
+        resultBox.classList.add('spam');
+        resultBox.classList.remove('ham');
+      } else {
+        resultText.innerHTML = `✅ This looks <b>safe</b> (not spam).`;
+        resultBox.classList.add('ham');
+        resultBox.classList.remove('spam');
+      }
+    } catch (err) {
+      resultText.textContent = "❌ Error: " + err.message;
+    }
+  });
+  </script>
+</body>
+</html>
